@@ -1,158 +1,117 @@
-# Описание приложения — EPUB-читалка с изучением языка
+# App Description — Ravena
 
-Читалка книг в формате EPUB с переводом слов и предложений на лету (английский →
-русский) и встроенным механизмом заучивания слов через интервальное повторение.
-Перевод — облачный, требует интернет-соединение.
+**Ravena** is an EPUB book reader with on-the-fly word and sentence translation (English → Russian) and a built-in spaced repetition mechanism for learning words. Translation is cloud-based and requires an internet connection.
 
-Приложение состоит из трёх вкладок (таб-бар): **Библиотека**, **Словарь**,
-**Настройки**. Экран чтения открывается поверх Библиотеки и не является
-отдельной вкладкой.
+The app consists of three tabs (tab bar): **Library**, **Dictionary**, **Settings**. The reading screen opens on top of the Library and is not a separate tab.
 
 ---
 
-## Вкладка 1. Библиотека
+## Tab 1. Library
 
-Стартовый экран приложения — список всех импортированных книг.
+The app's starting screen is a list of all imported books.
 
-**Список книг**
-- Обложка (миниатюра 44×60), название, автор
-- Полоска прогресса чтения + процент — общая доля прочитанного по всей книге
-  (не по текущей главе)
-- Пустое состояние с подсказкой, если книг ещё нет
+**Book List**
+- Cover (44×60 thumbnail), title, author
+- Reading progress bar + percentage (overall book progress, not just the current chapter)
+- Empty state with a hint if no books have been added yet
 
-**Импорт книги**
-- Кнопка "+" в навбаре → системный проводник файлов (только `.epub`)
-- Файл копируется в собственное хранилище приложения — доступ к оригинальному
-  файлу (iCloud Drive и т.п.) больше не требуется
-- Обложка, автор, язык, количество глав определяются автоматически при импорте
-- **Защита от дублей**: содержимое файла хешируется (SHA-256) до копирования —
-  если такая же книга уже есть в библиотеке, повторного импорта не происходит,
-  показывается сообщение с названием уже добавленной книги
-- Если файл повреждён или не является валидным EPUB — понятное сообщение об
-  ошибке, а не падение приложения
+**Importing a Book**
+- "+" button in the navigation bar → system file browser (only `.epub`)
+- The file is copied to the app's internal storage — access to the original file (e.g., iCloud Drive) is no longer required
+- Cover, author, language, and chapter count are determined automatically upon import
+- **Duplicate Protection**: File content is hashed (SHA-256) before copying — if the same book already exists in the library, it won't be imported again, and a message showing the existing book's name is displayed
+- If the file is corrupted or not a valid EPUB — a user-friendly error message is shown instead of crashing
 
-**Удаление**
-- Свайп по книге — удаляет и запись, и сам файл
-- При каждом запуске приложения происходит фоновая сверка: файлы без
-  соответствующей записи в базе (например, из-за сбоя при удалении) удаляются
-  автоматически
+**Deletion**
+- Swipe on a book — deletes both the database record and the file
+- A background check runs on every app launch: files without a corresponding database record (e.g., due to a deletion failure) are automatically cleaned up
 
-**Открытие книги** — тап по книге открывает её на той странице, где чтение было
-прервано в прошлый раз (или с начала, если книга открывается впервые).
+**Opening a Book** — tapping a book opens it at the exact page where reading was last interrupted (or from the beginning if opened for the first time).
 
 ---
 
-## Экран чтения
+## Reading Screen
 
-Открывается поверх Библиотеки при выборе книги. Основной режим — постраничное
-перелистывание (не непрерывный скролл) с анимацией переворота страницы.
+Opens on top of the Library when a book is selected. The primary mode is page-by-page turning (no continuous scroll) with a `.pageCurl` animation.
 
-**Перевод слова**
-- Тап по любому слову — снизу выезжает панель с переводом (через облачный
-  сервис, учитывает контекст предложения — например, различает "bank" как
-  "берег" и как "банк")
-- Показывается перевод и часть речи
-- Кнопка "Добавить в словарь" — сохраняет слово вместе с контекстным
-  предложением и названием книги
+**Word Translation**
+- Tap any word — a bottom sheet slides up with the translation (via a cloud service, considering the sentence context — e.g., distinguishing "bank" as a river bank vs. a financial institution)
+- Shows translation and part of speech
+- "Add to Dictionary" button — saves the word along with its context sentence and the book title
 
-**Перевод предложения**
-- Долгое нажатие на слово — переводится всё предложение, к которому оно
-  относится (а не отдельное слово)
+**Sentence Translation**
+- Long press on a word — translates the entire sentence it belongs to (not just the single word)
 
-**Сноски**
-- Сноски издания (в т.ч. вынесенные в отдельный файл на всю книгу) отображаются
-  как маленькая надстрочная цифра прямо в тексте
-- Тап по цифре — всплывающая панель с текстом сноски
+**Footnotes**
+- Edition footnotes (including those placed in a separate file for the whole book) are displayed as a small superscript number right in the text
+- Tap the number — pops up a panel with the footnote text
 
-**Изображения**
-- Иллюстрации из книги встроены прямо в текстовый поток на своём месте,
-  автоматически масштабируются по ширине страницы
+**Images**
+- Illustrations from the book are embedded directly in the text flow, automatically scaled to page width
 
-**Математические формулы**
-- Частичная поддержка: если издатель включил в разметку текстовый эквивалент
-  формулы (обычное дело для доступности), он показывается в квадратных скобках;
-  полноценной отрисовки формул нет
+**Mathematical Formulas**
+- Partial support: if the publisher included a text equivalent in the markup (common for accessibility), it is shown in square brackets; full formula rendering is not supported
 
-**Содержание**
-- Кнопка списка в навбаре открывает оглавление, построенное из настоящего
-  TOC-документа книги (а не подобранное по заголовкам "на глаз")
-- Один физический файл главы может содержать несколько пунктов оглавления —
-  переход происходит на конкретный раздел внутри файла, а не только на его
-  начало
-- Разделы без заголовка в оригинальном оглавлении (обложка, служебные страницы
-  издательства) в списке не показываются — при этом сами такие страницы
-  по-прежнему доступны при обычном перелистывании
+**Table of Contents**
+- The list button in the navigation bar opens the TOC, built from the actual TOC document (not just guessed from headers)
+- A single physical chapter file may contain multiple TOC entries — navigation jumps to the specific section inside the file, not just the beginning
+- Sections without a title in the original TOC (covers, publisher utility pages) are hidden from the list, but are still accessible via normal page turning
 
-**Навигация по главам** — стрелки в навбаре переключают на предыдущую/следующую
-главу целиком.
+**Chapter Navigation** — arrows in the navigation bar switch to the previous/next chapter entirely.
 
-**Прогресс** — тонкая полоска вверху экрана + подпись "Осталось N стр." до
-конца текущей главы (не всей книги — общий процент по книге виден в
-Библиотеке).
+**Progress** — a thin bar at the top + a "N pages left" label showing remaining pages in the current chapter (not the whole book).
 
-**Внешний вид на лету** — изменения в Настройках (шрифт, фон, поля, интервал)
-применяются сразу, без выхода с экрана чтения; читалка старается сохранить то
-же самое место в тексте при пересчёте разбивки на страницы.
+**On-the-fly Appearance** — changes in Settings (font, background, margins, spacing) are applied immediately without leaving the reading screen; the reader attempts to keep the exact reading position during pagination recalculation.
 
 ---
 
-## Вкладка 2. Словарь
+## Tab 2. Dictionary
 
-Список всех сохранённых слов.
+A list of all saved words.
 
-**Список**
-- Каждая строка — только слово и мелкий перевод рядом, без лишних деталей
-- Тап открывает экран с полной информацией: слово, перевод, часть речи,
-  контекстное предложение (из которого слово было сохранено), книга, дата
-  добавления, статус повторения
-- Свайп — удаление слова
+**List**
+- Each row displays only the word and a small translation
+- Tap to open full details: word, translation, part of speech, context sentence, book title, date added, and review status
+- Swipe to delete
 
-**Повторение слов (интервальные повторения)**
-- Если есть слова, готовые к повторению, наверху списка появляется кнопка
-  "Повторить слова" со счётчиком
-- Режим повторения — карточка за карточкой: слово → кнопка "Показать перевод"
-  → перевод, часть речи и контекст → оценка **Забыл** / **Помню** / **Легко**
-- От оценки зависит, когда слово покажется снова: "Забыл" — уже завтра,
-  "Помню"/"Легко" — интервал между повторениями постепенно растёт (тот же
-  принцип, что в Anki — слова, которые вы помните хорошо, повторяются всё реже)
-- В конце сессии — экран с количеством повторённых слов
+**Word Review (Spaced Repetition)**
+- If words are ready for review, a "Review Words" button with a counter appears at the top
+- Review mode works flashcard-style: word → "Show Translation" button → translation, part of speech, and context → grade **Forgot** / **Remember** / **Easy**
+- The grade determines when the word will appear again: "Forgot" — tomorrow, "Remember"/"Easy" — intervals gradually increase (similar to Anki)
+- At the end of the session, a screen shows the number of reviewed words
 
 ---
 
-## Вкладка 3. Настройки
+## Tab 3. Settings
 
-Все настройки применяются сразу и глобально для всех книг.
+All settings apply immediately and globally across all books.
 
-| Настройка | Диапазон |
+| Setting | Range |
 |---|---|
-| Размер шрифта | 14–32pt |
-| Стиль шрифта | Обычный / С засечками / Моно |
-| Фон для чтения | Белый / Сепия / Ночной / Чёрный |
-| Тема приложения | Системная / Светлая / Тёмная |
-| Поля по краям страницы | 8–40pt |
-| Межстрочный интервал | 0–10pt |
+| Font Size | 14–32pt |
+| Font Style | System / Serif / Monospaced |
+| Reading Background | White / Sepia / Night / Black |
+| App Theme | System / Light / Dark |
+| Margins | 8–40pt |
+| Line Spacing | 0–10pt |
 
-Внизу экрана — живое превью: кусок текста, оформленный ровно так же, как будет
-выглядеть страница книги при текущих настройках (шрифт, интервал, поля, фон —
-всё сразу, не по отдельности).
+At the bottom of the screen is a live preview: a text snippet styled exactly how the book page will look with current settings.
 
 ---
 
-## Что требует интернета
+## Internet Requirements
 
-Перевод слов и предложений — всегда (облачный сервис). Всё остальное — импорт,
-чтение, оглавление, сноски, картинки, словарь, повторение — работает полностью
-офлайн, интернет нужен только в момент самого перевода.
+Word and sentence translations always require internet (cloud service). Everything else — importing, reading, TOC, footnotes, images, dictionary, reviews — works completely offline.
 
 ---
 
-## Чего в приложении сознательно нет (пока)
+## What's Intentionally Missing (For Now)
 
-- Поиск по тексту книги
-- Закладки (кроме автоматического "продолжить с последнего места")
-- Выделение/подсветка произвольного текста (только сохранение отдельных слов)
-- Другие языковые пары, кроме английский → русский
-- Синхронизация между устройствами (iCloud и т.п.)
-- Полноценный рендер математических формул
+- Book text search
+- Bookmarks (apart from the automatic "continue reading" progress)
+- Arbitrary text highlighting (only single word saving is supported)
+- Language pairs other than English → Russian
+- Cross-device synchronization (iCloud, etc.)
+- Full mathematical formula rendering
 
-Техническое устройство того, как всё это реализовано внутри — в `ARCHITECTURE.md`.
+Technical details on how this is built internally can be found in `ARCHITECTURE.md`.

@@ -1,93 +1,89 @@
-# Ревью проекта
+# Review of Ravena Project
 
-## 1. Соответствие изначальному замыслу
+## 1. Compliance with Initial Vision
 
-| Требование | Статус |
+| Requirement | Status |
 |---|---|
-| EPUB-читалка для iOS | ✅ |
-| Тап по слову → перевод EN→RU | ✅ (через `UITextInputTokenizer`) |
-| Перевод целого предложения | ✅ (long-press, изменено с drag-select по вашей просьбе) |
-| Личный словарь с сохранением контекста | ✅ (SwiftData, дедупликация по слову+контексту) |
-| Перевод только через облако (интернет обязателен) | ✅ (DeepL + Claude через свой бэкенд) |
-| Без iCloud-синхронизации в MVP | ✅ (сознательно не реализовано) |
-| Только формат EPUB | ✅ |
+| EPUB reader for iOS | ✅ |
+| Tap word → EN→RU translation | ✅ (via `UITextInputTokenizer`) |
+| Translate full sentence | ✅ (long-press, changed from drag-select per request) |
+| Personal dictionary with context | ✅ (SwiftData, deduplication by word+context) |
+| Cloud-only translation (internet req.) | ✅ (DeepL + Claude via custom backend) |
+| No iCloud sync for MVP | ✅ (intentionally omitted) |
+| EPUB format only | ✅ |
 
-Базовый замысел выдержан полностью. Сверх исходного скоупа добавлены: страницы вместо скролла с анимацией `.pageCurl`, содержание/навигация по главам, прогресс чтения, настройки внешнего вида (шрифт/фон/тема/поля/интервалы).
+The core vision has been completely fulfilled. Beyond the initial scope, the following were added: page-turning animations (`.pageCurl`), table of contents / chapter navigation, reading progress, and appearance settings (font/background/theme/margins/spacing).
 
 ---
 
-## 2. Уязвимости — исправлено в этой сессии
+## 2. Vulnerabilities — Fixed in this Session
 
-| # | Проблема | Где | Серьёзность |
+| # | Issue | Location | Severity |
 |---|---|---|---|
-| 1 | Сравнение `Authorization`-токена через `===` — тайминг-атака (посимвольное сравнение с ранним выходом теоретически позволяет угадывать токен по времени ответа) | `backend/src/index.ts` | Средняя |
-| 2 | Zip-бомба: `EPUBParser` читал файлы из архива в память без ограничения размера | `EPUBParser.swift` | Средняя |
-| 3 | Нет лимита длины входных данных на бэкенде — можно было прислать гигантскую строку и разогнать счёт за DeepL/Claude | `backend/src/index.ts` | Низкая-средняя |
-| 4 | Сырые ошибки апстрима (DeepL/Anthropic) утекали клиенту в теле ответа 502 | `backend/src/index.ts` | Низкая |
-| 5 | LLM иногда оборачивает JSON в ```` ```json ```` несмотря на промпт — раньше это ломало парсинг ответа | `backend/src/claudeWordLookup.ts` | Низкая (надёжность, не безопасность) |
+| 1 | `Authorization` token compared with `===` — potential timing attack. | `backend/src/index.ts` | Medium |
+| 2 | Zip bomb: `EPUBParser` read files into memory without size limits. | `EPUBParser.swift` | Medium |
+| 3 | No input length limits on the backend — allowed huge strings that could spike DeepL/Claude billing. | `backend/src/index.ts` | Low-Medium |
+| 4 | Raw upstream errors (DeepL/Anthropic) leaked to the client in 502 responses. | `backend/src/index.ts` | Low |
+| 5 | LLM sometimes wraps JSON in ```` ```json ```` despite prompts, which broke response parsing. | `backend/src/claudeWordLookup.ts` | Low (reliability) |
 
-## 3. Уязвимости — осознанно НЕ исправлено (backlog)
+## 3. Vulnerabilities — Intentionally NOT Fixed (Backlog)
 
-**Главное и самое важное:** вся модель авторизации бэкенда — это **один общий секрет, зашитый в приложение**. Даже с тайминг-safe сравнением, секрет всё равно можно вытащить реверс-инжинирингом IPA (`strings`, Hopper, и т.п.), и тогда кто угодно сможет бить по вашему Worker напрямую, минуя приложение, и тратить ваш DeepL/Anthropic бюджет. Это было отмечено с самого начала работы над бэкендом и остаётся главным пунктом технического долга. Для публичного релиза нужны per-device/per-account токены (например, через Sign in with Apple + короткоживущие JWT).
+**Most Important:** The backend's entire authorization model uses **one shared secret hardcoded in the app**. Even with timing-safe comparison, the secret can be extracted via reverse-engineering (e.g., `strings`, Hopper). This allows anyone to bypass the app and drain your DeepL/Anthropic budget. For a public release, per-device/per-account tokens (e.g., Sign in with Apple + short-lived JWT) are strictly required.
 
-Также не сделано:
-- Rate-limiting на бэкенде сверх аккаунт-wide лимита Workers (100k/день) — при утечке токена это не спасёт от резкого всплеска трат за один день.
-- CORS-заголовки — не актуально, пока клиент только iOS (не браузер).
+Also not done:
+- Server-side rate limiting beyond the Workers account limit (100k/day).
+- CORS headers (not needed yet as the client is an iOS app, not a browser).
 
-## 4. Тонкие баги — исправлено в этой сессии
+## 4. Subtle Bugs — Fixed in this Session
 
-| # | Проблема | Где |
+| # | Issue | Location |
 |---|---|---|
-| 1 | **Race при push+pop.** Если парсинг EPUB падает почти мгновенно (например, файл отсутствует), `popViewController` мог вызваться до завершения анимации предшествующего `push`. UIKit не гарантирует корректность такой последовательности. Исправлено: экран-заглушку теперь пушим без анимации. | `RootTabBarController.swift` |
-| 2 | **Cache stampede.** Быстрый повторный тап по тому же слову, пока первый запрос перевода ещё не завершился — оба промахивались мимо кеша и уходили в сеть параллельно (лишний платный запрос). Переписал кеш с `NSLock`+словарь на `actor`, который отслеживает уже летящие запросы по ключу и переиспользует их. | `CachingTranslationService.swift` |
-| 3 | **Опора только на неявный autosave SwiftData.** Слово в словаре или прогресс чтения теоретически могли потеряться, если приложение падает/убивается до автосохранения. Добавил явные `try? modelContext.save()` в ключевых точках: после сохранения слова и при выходе с экрана чтения. | `DictionaryStore.swift`, `ReadingProgressStore.swift` |
-| 4 | **Двойной попап при быстром тапе.** UIKit молча игнорирует `present(_:)`, если что-то уже presented — тап по второму слову, пока открыт попап первого, выглядел как "ничего не произошло" (хотя запрос в сеть всё равно уходил). Теперь предыдущий попап закрывается перед показом нового. | `ReaderCoordinator.swift` |
+| 1 | **Race on push+pop.** `popViewController` could be called before an ongoing `push` animation finished if EPUB parsing failed instantly. Fixed by pushing the fallback screen without animation. | `RootTabBarController.swift` |
+| 2 | **Cache stampede.** Fast repeated taps on the same word triggered parallel network requests. Rewrote the cache using an `actor` to await inflight requests and reuse results. | `CachingTranslationService.swift` |
+| 3 | **Reliance on implicit SwiftData autosave.** Added explicit `try? modelContext.save()` after saving words or exiting the reader screen to prevent data loss on crashes. | `DictionaryStore.swift`, `ReadingProgressStore.swift` |
+| 4 | **Double popup on fast tap.** Tapping a second word while the first popup was still open resulted in nothing happening. Previous popups are now dismissed before a new one is presented. | `ReaderCoordinator.swift` |
 
-## 5. Тонкие баги — проверено и подтверждено корректным
+## 5. Subtle Bugs — Audited and Confirmed Correct
 
-Не всё, что выглядело подозрительно, оказалось багом — стоит явно зафиксировать, что было перепроверено:
+- **`Task {}` inside `RootTabBarController.openReader` after `await`**: Re-verified that `UIViewController` subclasses are implicitly `@MainActor`. A normal `Task {}` created inside them inherits this isolation, so execution correctly stays on the main thread. Not a bug.
+- **Security-scoped resource in `BookImporter`**: The `defer` block safely encompasses the entire function, including `await` suspension points. Not a bug.
+- **SwiftData + `@MainActor`**: `DictionaryStore`, `ReadingProgressStore`, and `BookImporter` are all explicitly `@MainActor`. Heavy EPUB parsing is offloaded to `Task.detached`, ensuring `ModelContext` is only accessed on the main actor. Correctly implemented.
 
-- **`Task {}` внутри `RootTabBarController.openReader` и обращение к UIKit после `await`** — на первый взгляд похоже на нарушение потока (могло бы выполниться не на главном потоке после возобновления после `await Task.detached{}.value`). Перепроверил: `UIViewController` и все его подклассы неявно `@MainActor`-изолированы начиная с современных SDK, поэтому обычный (не `.detached`) `Task {}`, созданный внутри метода `UIViewController`, наследует эту изоляцию — весь код после `await` действительно выполняется на главном потоке. Не баг.
-- **Security-scoped resource в `BookImporter`** — `startAccessingSecurityScopedResource`/`stopAccessingSecurityScopedResource` через `defer` корректно охватывают всю функцию, включая `await` внутри неё — `defer` в Swift гарантированно отрабатывает и при пересечении точек приостановки. Не баг.
-- **SwiftData + `@MainActor`** — `DictionaryStore`, `ReadingProgressStore`, `BookImporter` все явно помечены `@MainActor`, и тяжёлая работа (парсинг EPUB) вынесена в `Task.detached`, а `ModelContext` никогда не трогается вне главного актора. Сделано верно во всех местах.
+## 6. Known Limitations — Current Status
 
-## 6. Известные ограничения — статус на сейчас
+All items initially marked as low-priority backlog have now been addressed:
 
-Все пункты, изначально отмеченные здесь как low-priority backlog, к этому моменту закрыты:
-
-- **Пагинация могла "потерять" хвост главы** при экстремальной комбинации настроек — исправлено двумя слоями: диапазоны слайдеров сужены до безопасных (`ReaderSettings.Range`: шрифт 14–24, поля 8–40, интервал 0–10) + сам `ChapterPaginator` теперь аварийно увеличивает контейнер, если строка не помещается, вместо того чтобы молча остановиться. `ReaderPageViewController` дополнительно включает скролл именно на такой аварийной странице, чтобы ничего не обрезалось визуально.
-- **Извлечение предложения на границе страниц** — исправлено: `ChapterPaginator` теперь передаёт каждой странице полный текст главы и её смещение в нём (`ChapterPagination`/`PaginatedPage`), так что предложение, разорванное на стыке страниц, резолвится по всей главе, а не только по видимой странице.
-- **Кеш переводов не имел вытеснения** — исправлено: `CachingTranslationService` использует `LRUCache` с лимитами (500 слов / 200 предложений) вместо неограниченно растущих словарей.
-- **`activeReaderCoordinator` в `RootTabBarController`** — исправлено: координатор хранится в `ReaderViewController.retainedCoordinator`, время жизни привязано к экрану через ARC.
-- **Осиротевшие файлы при ошибке удаления** — исправлено: `LibraryFileReconciler` сверяет диск с базой при каждом запуске.
-- **Нет дедупликации при повторном импорте** — исправлено: `BookImporter` хеширует содержимое (SHA-256) до копирования.
-- **XML-парсер OPF** — исправлено: namespace-aware разбор вместо буквального префикса `dc:`.
+- **Pagination losing chapter tails** — Fixed by restricting setting ranges and implementing an emergency fallback size extension in `ChapterPaginator`.
+- **Sentence extraction at page boundaries** — Fixed. The full chapter text is passed down, allowing cross-page sentences to be fully resolved.
+- **Cache had no eviction** — Fixed by adopting an `LRUCache` (500 words / 200 sentences limits).
+- **`activeReaderCoordinator` lifecycle** — Fixed by holding the coordinator in `ReaderViewController.retainedCoordinator` via ARC.
+- **Orphaned files on deletion error** — Fixed by `LibraryFileReconciler` checking disk vs DB on every launch.
+- **No deduplication on re-import** — Fixed using SHA-256 hashing.
+- **XML OPF parser** — Fixed via namespace-aware parsing.
 
 ---
 
-## 7. Ревью новых фич (содержание, картинки, сноски, обложки, UI словаря/настроек)
+## 7. Review of New Features (TOC, Images, Footnotes, Covers, UI)
 
-### Исправлено в этой сессии
+### Fixed in this Session
 
-| # | Проблема | Где |
+| # | Issue | Location |
 |---|---|---|
-| 1 | **Кеш файла сносок жил не на ту область видимости.** Кросс-файловые сноски (общий `notes.xhtml` на всю книгу) кешировались внутри `extractParagraphs`, которая вызывается **на каждую главу заново** — значит, при ссылках из N глав на один файл сносок он перечитывался и перепарсился N раз вместо одного. Подняли кеш на уровень всей книги (`parse()`), передаём в `extractParagraphs` через `inout`. | `EPUBParser.swift` |
+| 1 | **Footnote cache scoping.** Cross-file footnotes were parsed repeatedly for every chapter. The cache was lifted to the book level (`parse()`) and passed down via `inout`. | `EPUBParser.swift` |
 
-### Проверено и признано корректным
+### Audited and Confirmed
 
-- **Пагинация с картинками и сносками** — `NSTextAttachment` и надстрочные символы сносок остаются частью обычного потока `NSAttributedString`, поэтому уже написанный `ChapterPaginator` (включая аварийный fallback для переполнения) обрабатывает их без специальной доработки. Разрезание по границам страниц не может разорвать символ сноски посередине — TextKit режет по глифам/символам, не внутри них.
-- **Смещения предложений с картинками/сносками** — `chapterFullText`, используемый `SentenceExtractor`, строится уже **после** замены символа-сноски на видимую надстрочную цифру, поэтому в отличие от картинок (там остаётся невидимый object-replacement-символ) для сносок в тексте предложения будет просто цифра — не невидимый мусорный символ.
-- **Использование `NavigationLink` в `DictionaryListView`** — экран уже был встроен напрямую в `UINavigationController` (без собственного `NavigationStack`), поэтому `NavigationLink` корректно пушит экран деталей на тот же стек — проверил, конфликтов с существующей навигацией нет.
-- **Отсутствие force unwrap** — весь новый код (парсинг TOC/сносок/картинок/обложки) последовательно использует `guard`/`try?`/optional chaining, ни одного `!`, который мог бы уронить импорт на кривом EPUB.
-- **`.externalStorage` для обложки** — подтвердил, что вынесение `coverImageData` из основной строки SQLite корректно комбинируется с Optional-типом и не требует полного migration plan для уже существующих локальных баз (аналогично уже принятому решению для `contentHash`).
+- **Pagination with images & footnotes** — `NSTextAttachment` and superscript symbols seamlessly integrate with the existing `ChapterPaginator`.
+- **Sentence offsets with images/footnotes** — The text used for sentence extraction is built after replacing footnote symbols, preventing invisible artifacts.
+- **`NavigationLink` in `DictionaryListView`** — Works perfectly with the existing `UINavigationController` stack.
+- **No Force Unwraps** — New TOC/footnote/image parsing uses safe optional unwrapping entirely to prevent crashes on malformed EPUBs.
+- **`.externalStorage` for covers** — Confirmed that pulling `coverImageData` out of the primary SQLite row does not require a full migration plan for existing local databases.
 
-### Известные ограничения — низкий приоритет, оставлены как есть
+### Low Priority Limitations Left As-Is
 
-- **Теоретическая коллизия символа-маркера сноски.** Маркер — символ из Private Use Area (`\u{E000}`), которого не бывает в обычном тексте книги. Но если абзац **одновременно** содержит настоящую сноску **и** отдельно встречающийся сырой символ той же кодовой точки (крайне маловероятно, но теоретически возможно в старых академических текстах, использующих PUA для нестандартных символов) — нумерация сносок в этом одном абзаце может сбиться. Проверка есть (`guard footnoteIndex <= footnotes.count`), паника невозможна, максимум — неверная сноска или пропавший маркер в этом редком случае.
-- **Сноски без `epub:type` (старые EPUB2-книги)** — не поддерживаются, уже обсуждалось: нет надёжного способа отличить сноску от обычной внутренней ссылки без семантической разметки, риск ложных срабатываний.
-- **Декодирование обложек в `body` SwiftUI-списка** — `UIImage(data:)` вызывается при каждой перерисовке `LibraryListView`. Для личной библиотеки не проблема, для очень большой стоит закешировать декодированные превью отдельно.
-- **`<image>` внутри inline SVG** — не ловится, только обычный `<img src="...">`.
+- **Footnote marker collision.** Extremely rare chance of a Private Use Area (`\u{E000}`) marker clashing if naturally present in the text. Ignored.
+- **Footnotes without `epub:type` (EPUB2)** — Not supported due to a high risk of false positives.
+- **Image decoding in SwiftUI `body`** — `UIImage(data:)` is called on every redraw in `LibraryListView`. Fine for personal libraries, but could be cached if it gets too large.
+- **Inline SVG `<image>`** — Ignored. Only standard `<img>` tags are supported.
 
-
-
-Из всего найденного за это ревью остаётся ровно один открытый пункт — **модель авторизации бэкенда** (раздел 3): общий секрет, зашитый в приложение, принципиально не защищает от реверс-инжиниринга бинарника. Всё остальное — как исправленное сразу, так и то, что изначально отложили в backlog как низкий приоритет — на данный момент закрыто.
+Everything found during this review has been addressed, except the **backend authorization model** (hardcoded secret), which remains the sole item in the technical debt backlog.

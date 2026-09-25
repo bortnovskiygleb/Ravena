@@ -1,9 +1,8 @@
 # Backend: reader-translate-proxy
 
-Прокси на Cloudflare Workers. Держит ключи DeepL и Anthropic на сервере,
-iOS-приложение обращается только сюда.
+A Cloudflare Workers proxy. It stores DeepL and Anthropic keys on the server so the iOS app only communicates with it.
 
-## Деплой
+## Deployment
 
 ```bash
 npm install -g wrangler
@@ -11,23 +10,22 @@ cd backend
 npm init -y
 npm install --save-dev @cloudflare/workers-types typescript
 
-# Секреты (спросит значение интерактивно, в git не попадают)
+# Secrets (prompts interactively, not stored in git)
 npx wrangler secret put DEEPL_API_KEY
 npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put APP_AUTH_TOKEN   # придумайте свою длинную случайную строку
+npx wrangler secret put APP_AUTH_TOKEN   # generate your own long random string
 
 npx wrangler deploy
 ```
 
-После деплоя вы получите URL вида `https://reader-translate-proxy.<ваш-субдомен>.workers.dev` —
-это и есть `baseURL` для `APITranslationService` в iOS-приложении.
+After deployment, you will get a URL like `https://reader-translate-proxy.<your-subdomain>.workers.dev` — this is the `baseURL` for the `APITranslationService` in the iOS app.
 
-## Как получить ключи
+## How to Get Keys
 
-- **DeepL**: https://www.deepl.com/pro-api — бесплатный тариф даёт ~500k символов/месяц.
-- **Anthropic**: https://console.anthropic.com — создать API key в консоли.
+- **DeepL**: https://www.deepl.com/pro-api — free tier provides ~500k chars/month.
+- **Anthropic**: https://console.anthropic.com — create an API key in the console.
 
-## Эндпоинты
+## Endpoints
 
 ### POST /translate/sentence
 ```json
@@ -41,17 +39,10 @@ npx wrangler deploy
 ```
 → `{ "translation": "берег", "partOfSpeech": "noun" }`
 
-Оба требуют заголовок `Authorization: Bearer <APP_AUTH_TOKEN>`.
+Both require the header: `Authorization: Bearer <APP_AUTH_TOKEN>`.
 
-## Ограничения текущей версии (сознательно, для MVP)
+## Current Version Limitations (intentional, for MVP)
 
-- Авторизация — один общий секрет на всё приложение, а не per-user токен.
-  Годится, пока у вас один клиент (сами тестируете) или закрытая бета.
-  Для публичного релиза нужно заменить на per-device/per-account токены
-  (иначе один "утёкший" секрет из бинарника позволит кому угодно тратить
-  ваш DeepL/Anthropic бюджет).
-- Нет rate-limiting на уровне пользователя — на бесплатном тарифе Workers
-  сам ограничивает 100k запросов/день на весь Worker, но это защита
-  инфраструктуры, а не защита бюджета от одного недобросовестного клиента.
-- Нет кеширования на сервере — кеш сейчас только in-memory на клиенте
-  (см. CachingTranslationService.swift), живёт только в рамках сессии.
+- Authorization — one shared secret for the entire app, not a per-user token. Good enough for a single client (testing) or closed beta. For public release, replace with per-device/per-account tokens (otherwise, a leaked binary secret allows anyone to spend your DeepL/Anthropic budget).
+- No user-level rate limiting — on the free tier, Workers limits to 100k requests/day per Worker, but this protects infrastructure, not the budget from a malicious client.
+- No server-side caching — caching is currently in-memory on the client (see CachingTranslationService.swift), tied to the session lifecycle.

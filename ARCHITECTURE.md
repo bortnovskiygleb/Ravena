@@ -1,97 +1,84 @@
-# Читалка EPUB с переводом — обзор архитектуры
+# Architecture of Ravena
 
-MVP: импорт книги → чтение → перевод слова/предложения → сохранение в словарь →
-прогресс → настройки внешнего вида. Ниже — все реализованные слои и куда
-смотреть, если нужно что-то поправить.
+MVP: book import → reading → word/sentence translation → save to dictionary → reading progress → appearance settings. Below are all implemented layers and where to look if modifications are needed.
 
-## 1. Парсинг EPUB
-| Файл | Роль |
+## 1. EPUB Parsing
+| File | Role |
 |---|---|
-| `EPUBModels.swift` | Модели `EPUBBook / EPUBChapter / EPUBParagraph` |
-| `EPUBParser.swift` | Распаковка ZIP → `container.xml` → `.opf` (манифест+spine) → текст глав через SwiftSoup |
-| `WordTokenizer.swift` | Разбивка параграфа на слова через `NLTokenizer` (для справки; сам тап реализован иначе — см. ниже) |
+| `EPUBModels.swift` | `EPUBBook / EPUBChapter / EPUBParagraph` models |
+| `EPUBParser.swift` | ZIP extraction → `container.xml` → `.opf` (manifest+spine) → chapter text via SwiftSoup |
+| `WordTokenizer.swift` | Paragraph word tokenization via `NLTokenizer` (for reference; actual tap logic differs — see below) |
 
-## 2. Экран чтения
-| Файл | Роль |
+## 2. Reading Screen
+| File | Role |
 |---|---|
-| `ReaderViewController.swift` | `UITextView` + тап → слово, long-press (0.4с) → предложение, через `UITextInputTokenizer`; рендер с учётом `ReaderSettings`; отслеживание скролла |
-| `SentenceExtractor.swift` | Находит предложение вокруг слова через `NLTokenizer(.sentence)` |
-| `ReadingProgressBar.swift` | Тонкая полоса прогресса вверху экрана |
+| `ReaderViewController.swift` | `UITextView` + tap → word, long-press (0.4s) → sentence via `UITextInputTokenizer`; renders based on `ReaderSettings`; tracks scrolling |
+| `SentenceExtractor.swift` | Finds the sentence around a word via `NLTokenizer(.sentence)` |
+| `ReadingProgressBar.swift` | Thin progress bar at the top of the screen |
 
-## 3. Перевод
-| Файл | Роль |
+## 3. Translation
+| File | Role |
 |---|---|
-| `TranslationService.swift` | Протокол + модели `WordTranslation`/`SentenceTranslation` |
-| `APITranslationService.swift` | HTTP-клиент к **своему** бэкенду (не напрямую в DeepL/LLM) |
-| `CachingTranslationService.swift` | In-memory кеш по `слово+контекст` на сессию |
-| `TranslationPopupViewController.swift` | Bottom sheet: loading / результат слова / результат предложения / ошибка |
-| `ReaderCoordinator.swift` | Склеивает reader ↔ перевод ↔ попап ↔ словарь ↔ прогресс |
+| `TranslationService.swift` | Protocol + `WordTranslation`/`SentenceTranslation` models |
+| `APITranslationService.swift` | HTTP client pointing to **our own** backend (not directly to DeepL/LLM) |
+| `CachingTranslationService.swift` | In-memory cache by `word+context` per session |
+| `TranslationPopupViewController.swift` | Bottom sheet: loading / word result / sentence result / error |
+| `ReaderCoordinator.swift` | Glues reader ↔ translation ↔ popup ↔ dictionary ↔ progress |
 
-### Бэкенд (`backend/`)
-| Файл | Роль |
+### Backend (`backend/`)
+| File | Role |
 |---|---|
-| `wrangler.toml` | Конфиг Cloudflare Workers (бесплатный тариф, 100k запросов/день) |
-| `src/index.ts` | Роутер: `/translate/sentence` → DeepL, `/translate/word` → Claude |
-| `src/deepl.ts` | Клиент DeepL — перевод предложений |
-| `src/claudeWordLookup.ts` | Клиент Claude Haiku — перевод слова с учётом контекста + часть речи |
-| `README.md` | Деплой, ключи, известные ограничения (общий секрет вместо per-user auth) |
+| `wrangler.toml` | Cloudflare Workers config (free tier, 100k reqs/day) |
+| `src/index.ts` | Router: `/translate/sentence` → DeepL, `/translate/word` → Claude |
+| `src/deepl.ts` | DeepL client — sentence translation |
+| `src/claudeWordLookup.ts` | Claude Haiku client — word translation with context + part of speech |
+| `README.md` | Deployment, keys, known limitations (shared secret instead of per-user auth) |
 
-## 4. Личный словарь
-| Файл | Роль |
+## 4. Personal Dictionary
+| File | Role |
 |---|---|
-| `SavedWord.swift` | SwiftData-модель: слово, перевод, часть речи, контекст, книга, дата |
-| `DictionaryStore.swift` | Сохранение с дедупликацией по слову+контексту |
-| `DictionaryListView.swift` | SwiftUI-список (`@Query`, авто-обновление), swipe-to-delete |
-| `DictionaryScreenFactory.swift` | `UIHostingController`-обёртка для UIKit-навигации |
+| `SavedWord.swift` | SwiftData model: word, translation, part of speech, context, book, date |
+| `DictionaryStore.swift` | Saving with deduplication by word+context |
+| `DictionaryListView.swift` | SwiftUI list (`@Query`, auto-updating), swipe-to-delete |
+| `DictionaryScreenFactory.swift` | `UIHostingController` wrapper for UIKit navigation |
 
-## 5. Библиотека и импорт
-| Файл | Роль |
+## 5. Library and Import
+| File | Role |
 |---|---|
-| `LibraryBook.swift` | SwiftData-модель книги + поля прогресса |
-| `BookImporter.swift` | Копирует EPUB в песочницу приложения, парсит метаданные, чистит за собой при ошибке |
-| `EPUBFilePicker.swift` | Обёртка `UIDocumentPickerViewController`, фильтр `.epub` |
-| `LibraryListView.swift` | Список книг, импорт по "+", удаление файла+записи, процент прочитанного |
-| `LibraryScreenFactory.swift` | `UIHostingController`-обёртка + пример стыковки с ридером |
+| `LibraryBook.swift` | SwiftData book model + progress fields |
+| `BookImporter.swift` | Copies EPUB into app sandbox, parses metadata, cleans up on error |
+| `EPUBFilePicker.swift` | `UIDocumentPickerViewController` wrapper, filters for `.epub` |
+| `LibraryListView.swift` | Book list, import via "+", file+record deletion, read percentage |
+| `LibraryScreenFactory.swift` | `UIHostingController` wrapper + reader docking example |
 
-## 6. Прогресс чтения
-| Файл | Роль |
+## 6. Reading Progress
+| File | Role |
 |---|---|
-| `ReadingProgressStore.swift` | Дебаунс-запись позиции (800мс) + `flush()` при закрытии экрана |
-| *(поля в `LibraryBook`)* | `totalChapters`, `lastReadChapterIndex`, `lastReadScrollFraction`, `progressFraction` |
+| `ReadingProgressStore.swift` | Position write debouncer (800ms) + `flush()` on screen dismissal |
+| *(Fields in `LibraryBook`)* | `totalChapters`, `lastReadChapterIndex`, `lastReadScrollFraction`, `progressFraction` |
 
-## 7. Настройки
-| Файл | Роль |
+## 7. Settings
+| File | Role |
 |---|---|
-| `ReaderSettings.swift` | Размер/стиль шрифта, фон для чтения, тема приложения |
-| `ReaderSettingsStore.swift` | Синглтон, `@Published` + персистентность в `UserDefaults` |
-| `SettingsView.swift` | Форма с превью текста и свотчами фона |
-| `SettingsScreenFactory.swift` | `UIHostingController`-обёртка |
+| `ReaderSettings.swift` | Font size/style, reading background, app theme |
+| `ReaderSettingsStore.swift` | Singleton, `@Published` + `UserDefaults` persistence |
+| `SettingsView.swift` | Form with text preview and background swatches |
+| `SettingsScreenFactory.swift` | `UIHostingController` wrapper |
 
 ---
 
-## Ключевые архитектурные решения по ходу разработки
+## Key Architectural Decisions
 
-- **Тап/long-press по слову** — через встроенный `UITextInputTokenizer`
-  (`closestPosition` + `rangeEnclosingPosition`), а не через ручной обход
-  `NSTextLayoutManager`: надёжнее и не зависит от TextKit 1 vs 2.
-- **API-ключи никогда не в приложении** — свой бэкенд-прокси на Cloudflare
-  Workers держит секреты DeepL/Anthropic, iOS-клиент ходит только туда.
-- **Гибридный перевод** — DeepL для предложений (дешевле, качественнее для
-  связного текста), LLM для слов (учитывает контекст, определяет часть речи).
-- **SwiftUI + UIKit вперемешку** — экраны со списками (`@Query` на SwiftData)
-  сделаны на SwiftUI и обёрнуты `UIHostingController`; сам ридер — UIKit
-  (нужен точный контроль над жестами и TextKit).
-- **Все настройки перерисовки сохраняют относительную позицию скролла** —
-  и при смене шрифта, и при восстановлении места чтения между сессиями.
+- **Word tap/long-press** — Uses built-in `UITextInputTokenizer` (`closestPosition` + `rangeEnclosingPosition`), rather than manually traversing `NSTextLayoutManager`: more reliable and independent of TextKit 1 vs 2.
+- **No API keys in the app** — A custom Cloudflare Workers backend proxy holds DeepL/Anthropic secrets; the iOS client only routes there.
+- **Hybrid translation** — DeepL for sentences (cheaper, higher quality for connected text), LLM for words (accounts for context, determines part of speech).
+- **SwiftUI + UIKit mix** — Screens with lists (`@Query` via SwiftData) are built in SwiftUI and wrapped in `UIHostingController`; the reader itself is UIKit (needs fine control over gestures and TextKit).
+- **All appearance settings preserve relative scroll position** — Whether changing font size or restoring read position between sessions.
 
-## Что ещё не сделано (осознанно отложено)
+## What's Left (Intentionally Postponed)
 
-- **Точка входа приложения** — таб-бар/навигация, связывающая Библиотеку,
-  Словарь и Настройки в одно целое, создание `ModelContainer` при старте.
-- **Навигация между главами** — сейчас `ReaderViewController` показывает
-  одну главу целиком; переключение вперёд/назад не реализовано.
-- **Продакшн-авторизация бэкенда** — общий секрет годится для личного
-  использования/беты, для публичного релиза нужны per-user токены.
-- **Обработка нестандартных EPUB** — DRM-защищённые файлы, битые архивы,
-  сложная вёрстка (таблицы, сноски, картинки) — пока выкидываются или падают.
-- **iCloud-синхронизация словаря** — сознательно отложена на старте.
+- **App Entry Point** — Tab bar/navigation connecting Library, Dictionary, and Settings, and `ModelContainer` creation on startup.
+- **Chapter Navigation** — `ReaderViewController` currently shows a chapter at a time; previous/next chapter logic is unimplemented.
+- **Production Backend Auth** — Shared secret is fine for personal use/beta; per-user tokens are needed for public release.
+- **Handling non-standard EPUBs** — DRM-protected files, broken archives, complex layout (tables, images) — currently skipped or crash.
+- **iCloud Dictionary Sync** — Intentionally omitted for MVP.
