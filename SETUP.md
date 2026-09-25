@@ -47,13 +47,19 @@ Root:          AppDelegate, SceneDelegate, AppDependencies, RootTabBarController
 
 When adding `AppDelegate.swift`, `SceneDelegate.swift`, and `Assets.xcassets`, select **Replace** to overwrite Xcode's empty templates. Our `Assets.xcassets` already contains a formatted App Icon (1024×1024).
 
-## 7. Configure Backend URL
+## 7. Configure Backend Connection
 
 In `AppDependencies.swift`, replace:
 ```swift
 let backendURL = URL(string: "https://reader-translate-proxy.example.workers.dev")!
 ```
 with your deployed URL (see `backend/README.md`).
+
+Next, in `Translation/APITranslationService.swift`, you must specify the authorization token (`APP_AUTH_TOKEN`) that you generated during the backend deployment. Locate the following commented-out line:
+```swift
+// request.setValue("Bearer \(deviceToken)", forHTTPHeaderField: "Authorization")
+```
+Uncomment it and replace `\(deviceToken)` with your actual token string (e.g., `"Bearer YOUR_SECRET_TOKEN"`). This is required to authenticate requests to your backend proxy.
 
 ## 8. Info.plist Permissions
 
