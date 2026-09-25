@@ -1,0 +1,9 @@
+name = "reader-translate-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+# Secrets are NOT set here — set them via:
+#   npx wrangler secret put DEEPL_API_KEY
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put APP_AUTH_TOKEN
+# They then become available as env.DEEPL_API_KEY etc. in src/index.ts.
