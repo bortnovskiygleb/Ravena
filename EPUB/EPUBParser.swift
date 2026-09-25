@@ -244,7 +244,7 @@ final class EPUBParser {
         // "Contents" page (<ol><li><a>Chapter 1</a></li>...) or any bulleted/
         // numbered content; without it that content (links included) simply
         // never appeared at all, not even as plain text.
-        let blocks = try body.select("p, h1, h2, h3, h4, blockquote, li, img")
+        let blocks = try body.select("p, h1, h2, h3, h4, blockquote, li, img, image")
         for element in blocks {
             // Footnote bodies (typically <aside epub:type="footnote">...) get
             // pulled in separately, inline at their reference point (see
@@ -254,8 +254,11 @@ final class EPUBParser {
             // of the chapter), with no indication they're a footnote.
             if isInsideFootnoteContainer(element) { continue }
 
-            if element.tagName() == "img" {
-                guard let src = try? element.attr("src"), !src.isEmpty else { continue }
+            if element.tagName() == "img" || element.tagName() == "image" {
+                let srcAttr = (try? element.attr("src")).flatMap { $0.isEmpty ? nil : $0 } 
+                    ?? (try? element.attr("xlink:href")).flatMap { $0.isEmpty ? nil : $0 }
+                    ?? (try? element.attr("href")).flatMap { $0.isEmpty ? nil : $0 }
+                guard let src = srcAttr else { continue }
                 let imagePath = resolvePath(href: src, relativeTo: chapterDirectory)
                 // Missing/unreadable/oversized image: skip it rather than
                 // failing the whole chapter over one bad picture.

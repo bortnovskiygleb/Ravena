@@ -403,11 +403,15 @@ extension ReaderViewController: UIPageViewControllerDataSource {
         if current.pageIndex > 0 {
             return makePage(chapterIndex: current.chapterIndex, pageIndex: current.pageIndex - 1)
         }
-        let previousChapterIndex = current.chapterIndex - 1
-        guard previousChapterIndex >= 0 else { return nil }
-        let previousPages = pagination(forChapter: previousChapterIndex).pages
-        guard let lastPageIndex = previousPages.indices.last else { return nil }
-        return makePage(chapterIndex: previousChapterIndex, pageIndex: lastPageIndex)
+        var previousChapterIndex = current.chapterIndex - 1
+        while previousChapterIndex >= 0 {
+            let previousPages = pagination(forChapter: previousChapterIndex).pages
+            if let lastPageIndex = previousPages.indices.last {
+                return makePage(chapterIndex: previousChapterIndex, pageIndex: lastPageIndex)
+            }
+            previousChapterIndex -= 1
+        }
+        return nil
     }
 
     func pageViewController(
@@ -420,9 +424,15 @@ extension ReaderViewController: UIPageViewControllerDataSource {
         if current.pageIndex + 1 < chapterPages.count {
             return makePage(chapterIndex: current.chapterIndex, pageIndex: current.pageIndex + 1)
         }
-        let nextChapterIndex = current.chapterIndex + 1
-        guard book.chapters.indices.contains(nextChapterIndex) else { return nil }
-        return makePage(chapterIndex: nextChapterIndex, pageIndex: 0)
+        var nextChapterIndex = current.chapterIndex + 1
+        while book.chapters.indices.contains(nextChapterIndex) {
+            let nextPages = pagination(forChapter: nextChapterIndex).pages
+            if !nextPages.isEmpty {
+                return makePage(chapterIndex: nextChapterIndex, pageIndex: 0)
+            }
+            nextChapterIndex += 1
+        }
+        return nil
     }
 }
 
