@@ -40,12 +40,12 @@ Translation/   TranslationService, APITranslationService, CachingTranslationServ
 Dictionary/    SavedWord, DictionaryStore, DictionaryListView, DictionaryScreenFactory
 Library/       LibraryBook, BookImporter, EPUBFilePicker, LibraryListView, LibraryScreenFactory, LibraryFileReconciler
 Settings/      ReaderSettings, ReaderSettingsStore, SettingsView, SettingsScreenFactory
-App/           AppDelegate, SceneDelegate, AppDependencies, RootTabBarController, Assets.xcassets (contains app icon)
+Root:          AppDelegate, SceneDelegate, AppDependencies, RootTabBarController, Assets.xcassets (contains app icon)
 ```
 
 ## 6. Replace Templates
 
-When adding `AppDelegate.swift`, `SceneDelegate.swift`, and `Assets.xcassets`, select **Replace** to overwrite Xcode's empty templates. Our `App/Assets.xcassets` already contains a formatted App Icon (1024×1024).
+When adding `AppDelegate.swift`, `SceneDelegate.swift`, and `Assets.xcassets`, select **Replace** to overwrite Xcode's empty templates. Our `Assets.xcassets` already contains a formatted App Icon (1024×1024).
 
 ## 7. Configure Backend URL
 
