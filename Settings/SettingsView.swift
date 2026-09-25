@@ -19,10 +19,13 @@ struct SettingsView: View {
 
                 Picker("Стиль", selection: $store.settings.fontStyle) {
                     ForEach(ReaderSettings.FontStyle.allCases, id: \.self) { style in
-                        Text(style.displayName).tag(style)
+                        Text(style.displayName)
+                            .font(Font(style.font(ofSize: CGFloat(store.settings.fontSize))))
+                            .tag(style)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.wheel)
+                .frame(height: 140)
             }
 
             Section("Фон для чтения") {

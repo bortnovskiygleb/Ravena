@@ -63,7 +63,7 @@ enum ChapterRenderer {
                     paragraphStyle.firstLineHeadIndent = leftIndent
                     paragraphStyle.headIndent = leftIndent
                 case .italicBody:
-                    font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize)).withTraits(.traitItalic)
+                    font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize), italic: true)
                 case .body:
                     font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize))
                     // Classic book-paragraph indent (~1.5em)

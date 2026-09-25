@@ -54,27 +54,228 @@ struct ReaderSettings: Codable, Equatable {
     }
 
     enum FontStyle: String, Codable, CaseIterable {
-        case system, serif, monospaced
+        case system
+        case newYork
+        case georgia
+        case palatino
+        case iowan
+        case charter
+        case baskerville
+        case gillSans
+        case avenir
+        case serif
+        case monospaced
+        case courierNew
 
         var displayName: String {
             switch self {
-            case .system: return "Обычный"
-            case .serif: return "С засечками"
-            case .monospaced: return "Моно"
+            case .system:      return "Системный"
+            case .newYork:     return "New York"
+            case .georgia:     return "Georgia"
+            case .palatino:    return "Palatino"
+            case .iowan:       return "Iowan Old Style"
+            case .charter:     return "Charter"
+            case .baskerville: return "Baskerville"
+            case .gillSans:    return "Gill Sans"
+            case .avenir:      return "Avenir"
+            case .serif:       return "Системный Serif"
+            case .monospaced:  return "Системный Моно"
+            case .courierNew:  return "Courier New"
             }
         }
+
+        // MARK: - Font resolution
 
         func font(ofSize size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
             switch self {
             case .system:
                 return .systemFont(ofSize: size, weight: weight)
+
+            case .newYork:
+                // New York — Apple's reading-optimised serif, available iOS 13+.
+                // The family name "New York" is exposed via UIFont.familyNames; the
+                // individual face names depend on the installed variant (Regular /
+                // Medium / Semibold / Bold). We ask for the closest match to the
+                // requested weight rather than hard-coding a single PostScript name.
+                let isBold = weight == .bold || weight == .semibold || weight == .heavy || weight == .black
+                let candidate = isBold ? "NewYork-Semibold" : "NewYork-Regular"
+                return UIFont(name: candidate, size: size) ?? serifFallback(size: size)
+
+            case .georgia:
+                let name = Self.georgiaName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
+            case .palatino:
+                let name = Self.palatinoName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
+            case .iowan:
+                let name = Self.iowanName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? serifFallback(size: size)
+
+            case .charter:
+                let name = Self.charterName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
+            case .baskerville:
+                let name = Self.baskervilleName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
+            case .gillSans:
+                let name = Self.gillSansName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
+            case .avenir:
+                let name = Self.avenirName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .systemFont(ofSize: size, weight: weight)
+
             case .serif:
-                let base = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
-                let descriptor = base.withDesign(.serif) ?? base
-                return UIFont(descriptor: descriptor, size: size)
+                return serifFallback(size: size)
+
             case .monospaced:
                 return .monospacedSystemFont(ofSize: size, weight: weight)
+
+            case .courierNew:
+                let name = Self.courierNewName(weight: weight, italic: false)
+                return UIFont(name: name, size: size) ?? .monospacedSystemFont(ofSize: size, weight: weight)
             }
+        }
+
+        /// Variant with explicit italic flag, used by ChapterRenderer for italicBody paragraphs.
+        func font(ofSize size: CGFloat, weight: UIFont.Weight = .regular, italic: Bool) -> UIFont {
+            guard italic else { return font(ofSize: size, weight: weight) }
+
+            switch self {
+            case .system:
+                let base = UIFont.systemFont(ofSize: size, weight: weight)
+                return base.withTraits(.traitItalic)
+
+            case .newYork:
+                let isBold = weight == .bold || weight == .semibold || weight == .heavy || weight == .black
+                let candidate = isBold ? "NewYork-SemiboldItalic" : "NewYork-RegularItalic"
+                return UIFont(name: candidate, size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .georgia:
+                return UIFont(name: Self.georgiaName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .palatino:
+                return UIFont(name: Self.palatinoName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .iowan:
+                return UIFont(name: Self.iowanName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .charter:
+                return UIFont(name: Self.charterName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .baskerville:
+                return UIFont(name: Self.baskervilleName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .gillSans:
+                return UIFont(name: Self.gillSansName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .avenir:
+                return UIFont(name: Self.avenirName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .serif:
+                return serifFallback(size: size).withTraits(.traitItalic)
+
+            case .monospaced:
+                return UIFont.monospacedSystemFont(ofSize: size, weight: weight).withTraits(.traitItalic)
+
+            case .courierNew:
+                return UIFont(name: Self.courierNewName(weight: weight, italic: true), size: size)
+                    ?? font(ofSize: size, weight: weight).withTraits(.traitItalic)
+            }
+        }
+
+        // MARK: - PostScript name helpers
+
+        private static func georgiaName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "Georgia-BoldItalic"
+            case (true,  false): return "Georgia-Bold"
+            case (false, true):  return "Georgia-Italic"
+            case (false, false): return "Georgia"
+            }
+        }
+
+        private static func palatinoName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "Palatino-BoldItalic"
+            case (true,  false): return "Palatino-Bold"
+            case (false, true):  return "Palatino-Italic"
+            case (false, false): return "Palatino-Roman"
+            }
+        }
+
+        private static func iowanName(weight: UIFont.Weight, italic: Bool) -> String {
+            // Iowan Old Style ships as part of the iOS system font library.
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "IowanOldStyle-BoldItalic"
+            case (true,  false): return "IowanOldStyle-Bold"
+            case (false, true):  return "IowanOldStyle-Italic"
+            case (false, false): return "IowanOldStyle-Roman"
+            }
+        }
+
+        private static func charterName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "Charter-BoldItalic"
+            case (true,  false): return "Charter-Bold"
+            case (false, true):  return "Charter-Italic"
+            case (false, false): return "Charter-Roman"
+            }
+        }
+
+        private static func baskervilleName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "Baskerville-BoldItalic"
+            case (true,  false): return "Baskerville-Bold"
+            case (false, true):  return "Baskerville-Italic"
+            case (false, false): return "Baskerville"
+            }
+        }
+
+        private static func gillSansName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "GillSans-BoldItalic"
+            case (true,  false): return "GillSans-Bold"
+            case (false, true):  return "GillSans-Italic"
+            case (false, false): return "GillSans"
+            }
+        }
+
+        private static func avenirName(weight: UIFont.Weight, italic: Bool) -> String {
+            // Avenir doesn't have a true italic — "Oblique" is used instead.
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "Avenir-HeavyOblique"
+            case (true,  false): return "Avenir-Heavy"
+            case (false, true):  return "Avenir-BookOblique"
+            case (false, false): return "Avenir-Book"
+            }
+        }
+
+        private static func courierNewName(weight: UIFont.Weight, italic: Bool) -> String {
+            switch (weight == .bold || weight == .heavy || weight == .black, italic) {
+            case (true,  true):  return "CourierNewPS-BoldItalicMT"
+            case (true,  false): return "CourierNewPS-BoldMT"
+            case (false, true):  return "CourierNewPS-ItalicMT"
+            case (false, false): return "CourierNewPSMT"
+            }
+        }
+
+        private func serifFallback(size: CGFloat) -> UIFont {
+            let base = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+            let descriptor = base.withDesign(.serif) ?? base
+            return UIFont(descriptor: descriptor, size: size)
         }
     }
 
