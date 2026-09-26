@@ -9,7 +9,7 @@ enum ReaderLayoutMetrics {
         UIEdgeInsets(
             top: 16,
             left: CGFloat(settings.horizontalMargin),
-            bottom: 24,
+            bottom: 48,
             right: CGFloat(settings.horizontalMargin)
         )
     }
