@@ -54,6 +54,19 @@ final class ReaderViewController: UIViewController {
     private let nextChapterButton = UIBarButtonItem()
     private var cancellables = Set<AnyCancellable>()
 
+    /// True while this view controller is on screen. Tracked manually via
+    /// viewWillAppear / viewWillDisappear so repaginate knows whether it can
+    /// apply changes immediately or must defer them to the next appearance.
+    private var isVisible = false
+
+    /// Non-nil when a settings change happened while the reader was off-screen.
+    /// Stores the fractional position (0...1 within the current chapter) so
+    /// viewWillAppear can rebuild at the right spot instead of calling
+    /// setViewControllers while UIPageViewController's view is off-screen,
+    /// which can silently fail to update viewControllers?.first and then cause
+    /// the current chapter to keep displaying the old font.
+    private var deferredRepaginationFraction: Double?
+
     /// Tapping empty space toggles this — hides the progress label, the
     /// navigation bar (with its TOC/chapter buttons), and the system status
     /// bar, for an uncluttered full-screen reading view.
@@ -118,17 +131,23 @@ final class ReaderViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // The settings-change Combine subscription in observeSettingsChanges
-        // fires (and applies) regardless of whether this screen is actually
-        // visible — e.g. it's still alive on the Library tab's nav stack
-        // while the Settings tab is showing. But UIPageViewController can
-        // fail to visually refresh a setViewControllers(...) transition that
-        // happened while its own view wasn't in the window, showing stale
-        // content until the user swipes. Re-showing the current page now,
-        // right as this screen is about to become visible again, forces a
-        // proper redraw — cheap, since pagination itself is already cached
-        // and this just re-materializes the (already-correct) page.
-        guard book != nil, let current = pageViewController.viewControllers?.first as? ReaderPageViewController else { return }
+        isVisible = true
+        guard book != nil else { return }
+
+        if let fraction = deferredRepaginationFraction {
+            // Settings changed while we were off-screen — run the repagination
+            // now that the view is about to become visible, so setViewControllers
+            // fires while UIPageViewController's view is properly in the window.
+            deferredRepaginationFraction = nil
+            pageViewController.dataSource = nil
+            openAtStart(chapterIndex: currentChapterIndex, fraction: fraction)
+            pageViewController.dataSource = self
+            return
+        }
+
+        // Normal re-seat: UIPageViewController can fail to visually refresh a
+        // setViewControllers call that happened while its view was off-screen.
+        guard let current = pageViewController.viewControllers?.first as? ReaderPageViewController else { return }
         if let page = makePage(chapterIndex: current.chapterIndex, pageIndex: current.pageIndex) {
             pageViewController.setViewControllers([page], direction: .forward, animated: false)
         }
@@ -146,6 +165,7 @@ final class ReaderViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        isVisible = false
         guard let current = pageViewController.viewControllers?.first as? ReaderPageViewController else { return }
         onViewWillDisappear?(current.chapterIndex, fraction(chapterIndex: current.chapterIndex, pageIndex: current.pageIndex))
     }
@@ -315,19 +335,39 @@ final class ReaderViewController: UIViewController {
     /// change): remembers roughly where the user was (as a fraction through
     /// the current chapter) and re-opens at the equivalent spot in the newly
     /// paginated chapter, since exact page indices don't carry over.
+    ///
+    /// When the reader is not on screen (e.g. the user is on the Settings tab),
+    /// UIPageViewController's setViewControllers can silently fail to update
+    /// viewControllers?.first. A subsequent viewWillAppear then rebuilds the
+    /// page using a stale pageIndex from the old VC — which may be out of range
+    /// in the new pagination — so makePage returns nil and the current chapter
+    /// keeps the old font. To avoid this, we defer the actual rebuild to
+    /// viewWillAppear when the view is not currently visible.
     private func repaginateKeepingRelativePosition() {
         guard book != nil else { return }
+
+        // Capture the position BEFORE clearing the cache: fraction() relies on
+        // pagesByChapter still containing the old pagination.
         let fractionBeforeChange: Double
         if let current = pageViewController.viewControllers?.first as? ReaderPageViewController {
             fractionBeforeChange = fraction(chapterIndex: current.chapterIndex, pageIndex: current.pageIndex)
         } else {
             fractionBeforeChange = 0
         }
+
         pagesByChapter.removeAll()
-        // Temporarily nil out the dataSource so UIPageViewController discards
-        // any prefetched neighbouring pages it's holding in memory. Without
-        // this, swipe-to-next after a font change shows a stale (old-font) page
-        // that was already pre-built before the repagination happened.
+
+        guard isVisible else {
+            // Off-screen: stash the position and let viewWillAppear do the
+            // actual rebuild once the view is properly in the window.
+            deferredRepaginationFraction = fractionBeforeChange
+            return
+        }
+
+        // On-screen: apply immediately. Nil the dataSource first so
+        // UIPageViewController discards any prefetched neighbouring pages it's
+        // holding; without this, swipe-to-next after a font change shows a
+        // stale page that was pre-built before the repagination.
         pageViewController.dataSource = nil
         openAtStart(chapterIndex: currentChapterIndex, fraction: fractionBeforeChange)
         pageViewController.dataSource = self
