@@ -273,7 +273,13 @@ struct ReaderSettings: Codable, Equatable {
         }
 
         private func serifFallback(size: CGFloat) -> UIFont {
-            let base = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+            // Do NOT use preferredFontDescriptor(withTextStyle:) here — that
+            // descriptor carries a Dynamic Type size and, when the user has
+            // "Bold Text" on in Accessibility, forces a bold symbolic trait,
+            // which then overrides the explicit size we pass to UIFont(descriptor:size:).
+            // Building the descriptor from a plain system font and applying
+            // .serif design avoids both problems.
+            let base = UIFont.systemFont(ofSize: size).fontDescriptor
             let descriptor = base.withDesign(.serif) ?? base
             return UIFont(descriptor: descriptor, size: size)
         }

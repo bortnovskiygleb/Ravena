@@ -324,7 +324,13 @@ final class ReaderViewController: UIViewController {
             fractionBeforeChange = 0
         }
         pagesByChapter.removeAll()
+        // Temporarily nil out the dataSource so UIPageViewController discards
+        // any prefetched neighbouring pages it's holding in memory. Without
+        // this, swipe-to-next after a font change shows a stale (old-font) page
+        // that was already pre-built before the repagination happened.
+        pageViewController.dataSource = nil
         openAtStart(chapterIndex: currentChapterIndex, fraction: fractionBeforeChange)
+        pageViewController.dataSource = self
     }
 
     // MARK: - Chapter navigation

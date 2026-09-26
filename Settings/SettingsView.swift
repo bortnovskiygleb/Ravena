@@ -20,7 +20,9 @@ struct SettingsView: View {
                 Picker("Стиль", selection: $store.settings.fontStyle) {
                     ForEach(ReaderSettings.FontStyle.allCases, id: \.self) { style in
                         Text(style.displayName)
-                            .font(Font(style.font(ofSize: CGFloat(store.settings.fontSize))))
+                            // Fixed size so the wheel row height doesn't change
+                            // when the user drags the font-size slider.
+                            .font(Font(style.font(ofSize: 17)))
                             .tag(style)
                     }
                 }
