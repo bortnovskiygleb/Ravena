@@ -51,17 +51,17 @@ enum ChapterRenderer {
                 case .heading1:
                     font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize) + 24, weight: .bold)
                     paragraphStyle.paragraphSpacingBefore = 28
-                    paragraphStyle.paragraphSpacing = 6
-                    let leftIndent = CGFloat(settings.fontSize) * 2.0
+                    paragraphStyle.paragraphSpacing = 3
+                    let leftIndent = CGFloat(settings.fontSize) * 3.0
                     paragraphStyle.firstLineHeadIndent = leftIndent
                     paragraphStyle.headIndent = leftIndent
                 case .heading2:
                     font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize) + 16, weight: .bold)
                     paragraphStyle.paragraphSpacingBefore = 20
-                    paragraphStyle.paragraphSpacing = 4
-                    let leftIndent = CGFloat(settings.fontSize) * 1.5
-                    paragraphStyle.firstLineHeadIndent = leftIndent
-                    paragraphStyle.headIndent = leftIndent
+                    paragraphStyle.paragraphSpacing = 2
+                    let leftIndent2 = CGFloat(settings.fontSize) * 2.5
+                    paragraphStyle.firstLineHeadIndent = leftIndent2
+                    paragraphStyle.headIndent = leftIndent2
                 case .italicBody:
                     font = settings.fontStyle.font(ofSize: CGFloat(settings.fontSize), italic: true)
                 case .body:
