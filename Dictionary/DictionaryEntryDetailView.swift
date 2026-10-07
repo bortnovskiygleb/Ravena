@@ -59,6 +59,7 @@ struct DictionaryEntryDetailView: View {
                     .font(.body)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
         }
         .navigationTitle(entry.word)
