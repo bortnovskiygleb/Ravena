@@ -49,15 +49,25 @@ struct DictionaryListView: View {
                         .padding(.horizontal)
 
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
-                            ForEach(words) { entry in
-                                card(for: entry)
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            modelContext.delete(entry)
-                                        } label: {
-                                            Label("Удалить", systemImage: "trash")
-                                        }
+                            ForEach(groupedWords, id: \.date) { group in
+                                Section {
+                                    ForEach(group.words) { entry in
+                                        card(for: entry)
+                                            .contextMenu {
+                                                Button(role: .destructive) {
+                                                    modelContext.delete(entry)
+                                                } label: {
+                                                    Label("Удалить", systemImage: "trash")
+                                                }
+                                            }
                                     }
+                                } header: {
+                                    Text(sectionTitle(for: group.date))
+                                        .font(.title3.bold())
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.top, 8)
+                                        .padding(.bottom, 4)
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -109,6 +119,37 @@ struct DictionaryListView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
+    }
+
+    private var groupedWords: [(date: Date, words: [SavedWord])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: words) { word in
+            // Сдвигаем время на 4 часа назад: 03:59 будет считаться предыдущим днем
+            let shifted = calendar.date(byAdding: .hour, value: -4, to: word.dateAdded) ?? word.dateAdded
+            return calendar.startOfDay(for: shifted)
+        }
+        return grouped.map { (date: $0.key, words: $0.value) }.sorted { $0.date > $1.date }
+    }
+
+    private func sectionTitle(for logicalDate: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date.now
+        let shiftedNow = calendar.date(byAdding: .hour, value: -4, to: now) ?? now
+        let logicalToday = calendar.startOfDay(for: shiftedNow)
+        
+        if logicalDate == logicalToday {
+            return "Сегодня"
+        }
+        
+        let logicalYesterday = calendar.date(byAdding: .day, value: -1, to: logicalToday)
+        if logicalDate == logicalYesterday {
+            return "Вчера"
+        }
+        
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM"
+        return formatter.string(from: logicalDate)
     }
 
     private func card(for entry: SavedWord) -> some View {
