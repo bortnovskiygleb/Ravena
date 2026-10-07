@@ -45,6 +45,12 @@ struct ReviewSessionView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
+                
+            Button("Повторить все слова") {
+                loadAllWords()
+            }
+            .buttonStyle(.bordered)
+            .padding(.top, 16)
         }
     }
 
@@ -160,6 +166,15 @@ struct ReviewSessionView: View {
             sortBy: [SortDescriptor(\.nextReviewDate)]
         )
         dueWords = (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    private func loadAllWords() {
+        let descriptor = FetchDescriptor<SavedWord>(
+            sortBy: [SortDescriptor(\.nextReviewDate)]
+        )
+        dueWords = (try? modelContext.fetch(descriptor)) ?? []
+        currentIndex = 0
+        isRevealed = false
     }
 
     /// Russian plural agreement for "слово" (1 слово / 2 слова / 5 слов) —

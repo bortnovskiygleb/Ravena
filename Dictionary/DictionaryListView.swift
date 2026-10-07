@@ -28,18 +28,21 @@ struct DictionaryListView: View {
                 emptyState
             } else {
                 List {
-                    if !dueWords.isEmpty {
-                        Section {
-                            Button {
-                                isShowingReview = true
-                            } label: {
-                                HStack {
-                                    Image(systemName: "rectangle.stack.fill")
-                                        .foregroundStyle(Color.accentColor)
-                                    Text("Повторить слова")
-                                        .foregroundStyle(.primary)
-                                    Spacer()
+                    Section {
+                        Button {
+                            isShowingReview = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "rectangle.stack.fill")
+                                    .foregroundStyle(Color.accentColor)
+                                Text("Повторить слова")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if dueWords.count > 0 {
                                     Text("\(dueWords.count)")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text("0")
                                         .foregroundStyle(.secondary)
                                 }
                             }
