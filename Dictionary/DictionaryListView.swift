@@ -28,8 +28,8 @@ struct DictionaryListView: View {
             if words.isEmpty {
                 emptyState
             } else {
-                List {
-                    Section {
+                ScrollView {
+                    VStack(spacing: 24) {
                         Button {
                             isShowingReview = true
                         } label: {
@@ -39,29 +39,32 @@ struct DictionaryListView: View {
                                 Text("Повторить слова")
                                     .foregroundStyle(.primary)
                                 Spacer()
-                                if dueWords.count > 0 {
-                                    Text("\(dueWords.count)")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    Text("0")
-                                        .foregroundStyle(.secondary)
-                                }
+                                Text(dueWords.count > 0 ? "\(dueWords.count)" : "0")
+                                    .foregroundStyle(.secondary)
                             }
+                            .padding()
+                            .background(Color(uiColor: .secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
-                    }
+                        .padding(.horizontal)
 
-                    Section {
-                        ForEach(words) { entry in
-                            Button {
-                                selectedWord = entry
-                            } label: {
-                                row(for: entry)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 16)], spacing: 16) {
+                            ForEach(words) { entry in
+                                card(for: entry)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(entry)
+                                        } label: {
+                                            Label("Удалить", systemImage: "trash")
+                                        }
+                                    }
                             }
-                            .buttonStyle(.plain)
                         }
-                        .onDelete(perform: delete)
+                        .padding(.horizontal)
                     }
+                    .padding(.vertical)
                 }
+                .background(Color(uiColor: .systemGroupedBackground))
             }
         }
         .overlay {
@@ -93,18 +96,6 @@ struct DictionaryListView: View {
         }
     }
 
-    private func row(for entry: SavedWord) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(entry.word)
-                .font(.headline)
-            Spacer()
-            Text(entry.translation)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 6)
-    }
-
     private var emptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "book")
@@ -120,9 +111,28 @@ struct DictionaryListView: View {
         }
     }
 
-    private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(words[index])
+    private func card(for entry: SavedWord) -> some View {
+        Button {
+            selectedWord = entry
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(entry.word)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                
+                Text(entry.translation)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    
+                Spacer(minLength: 0)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
+        .buttonStyle(.plain)
     }
 }
