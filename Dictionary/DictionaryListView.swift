@@ -6,6 +6,7 @@ struct DictionaryListView: View {
     @Query private var dueWords: [SavedWord]
     @Environment(\.modelContext) private var modelContext
     @State private var isShowingReview = false
+    @State private var selectedWord: SavedWord?
 
     init() {
         _words = Query(sort: \SavedWord.dateAdded, order: .reverse)
@@ -51,11 +52,12 @@ struct DictionaryListView: View {
 
                     Section {
                         ForEach(words) { entry in
-                            NavigationLink {
-                                DictionaryEntryDetailView(entry: entry)
+                            Button {
+                                selectedWord = entry
                             } label: {
                                 row(for: entry)
                             }
+                            .buttonStyle(.plain)
                         }
                         .onDelete(perform: delete)
                     }
@@ -65,6 +67,20 @@ struct DictionaryListView: View {
         .navigationTitle("Мой словарь")
         .sheet(isPresented: $isShowingReview) {
             ReviewSessionView()
+        }
+        .sheet(item: $selectedWord) { entry in
+            NavigationStack {
+                DictionaryEntryDetailView(entry: entry)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Готово") {
+                                selectedWord = nil
+                            }
+                        }
+                    }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 
