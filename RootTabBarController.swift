@@ -5,13 +5,11 @@ import Combine
 final class RootTabBarController: UITabBarController {
 
     private let dependencies: AppDependencies
-    private var cancellables = Set<AnyCancellable>()
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
         super.init(nibName: nil, bundle: nil)
         setupTabs()
-        observeAppTheme()
         // Cheap (a directory listing of a handful of files, at most), so no
         // need to defer or background it — see LibraryFileReconciler's doc
         // comment for what this is cleaning up after.
@@ -126,13 +124,4 @@ final class RootTabBarController: UITabBarController {
         return viewController
     }
 
-    private func observeAppTheme() {
-        ReaderSettingsStore.shared.$settings
-            .map(\.appTheme)
-            .removeDuplicates()
-            .sink { [weak self] theme in
-                self?.overrideUserInterfaceStyle = theme.userInterfaceStyle
-            }
-            .store(in: &cancellables)
-    }
 }

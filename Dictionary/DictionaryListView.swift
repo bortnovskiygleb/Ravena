@@ -64,6 +64,15 @@ struct DictionaryListView: View {
                 }
             }
         }
+        .overlay {
+            if isShowingReview {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            }
+        }
+        .blur(radius: isShowingReview ? 5 : 0)
+        .animation(.easeInOut(duration: 0.3), value: isShowingReview)
         .navigationTitle("Мой словарь")
         .sheet(isPresented: $isShowingReview) {
             ReviewSessionView()

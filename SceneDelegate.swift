@@ -1,8 +1,10 @@
 import UIKit
+import Combine
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    private var cancellables = Set<AnyCancellable>()
 
     // Created once per app launch and handed down to every screen that needs
     // the ModelContainer or the translation service.
@@ -15,5 +17,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = RootTabBarController(dependencies: dependencies)
         self.window = window
         window.makeKeyAndVisible()
+
+        ReaderSettingsStore.shared.$settings
+            .map(\.appTheme)
+            .removeDuplicates()
+            .sink { [weak window] theme in
+                window?.overrideUserInterfaceStyle = theme.userInterfaceStyle
+            }
+            .store(in: &cancellables)
     }
 }
