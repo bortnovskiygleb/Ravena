@@ -5,6 +5,7 @@ import SwiftData
 final class SavedWord {
     var word: String
     var translation: String
+    var transcription: String?
     var partOfSpeech: String?
     var contextSentence: String
     var bookTitle: String?
@@ -31,6 +32,7 @@ final class SavedWord {
         word: String,
         translation: String,
         partOfSpeech: String?,
+        transcription: String?,
         contextSentence: String,
         bookTitle: String?,
         dateAdded: Date = .now
@@ -38,6 +40,7 @@ final class SavedWord {
         self.word = word
         self.translation = translation
         self.partOfSpeech = partOfSpeech
+        self.transcription = transcription
         self.contextSentence = contextSentence
         self.bookTitle = bookTitle
         self.dateAdded = dateAdded

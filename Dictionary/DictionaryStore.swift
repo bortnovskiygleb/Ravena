@@ -16,6 +16,7 @@ final class DictionaryStore {
         word: String,
         translation: String,
         partOfSpeech: String?,
+        transcription: String?,
         contextSentence: String,
         bookTitle: String?
     ) {
@@ -25,6 +26,11 @@ final class DictionaryStore {
         if let existing = try? modelContext.fetch(descriptor).first {
             existing.translation = translation
             existing.partOfSpeech = partOfSpeech
+            // Only overwrite a user-edited transcription if the API returned a
+            // non-nil value — preserves manual edits when the user re-saves the same word.
+            if let transcription {
+                existing.transcription = transcription
+            }
             try? modelContext.save()
             return
         }
@@ -33,6 +39,7 @@ final class DictionaryStore {
             word: word,
             translation: translation,
             partOfSpeech: partOfSpeech,
+            transcription: transcription,
             contextSentence: contextSentence,
             bookTitle: bookTitle
         )

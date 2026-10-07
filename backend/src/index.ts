@@ -99,6 +99,7 @@ export default {
           return jsonResponse({
             translation: result.translation,
             partOfSpeech: result.partOfSpeech,
+            transcription: result.transcription,
           });
         } catch (claudeError) {
           console.warn("Claude word lookup failed, falling back to DeepL:", claudeError);

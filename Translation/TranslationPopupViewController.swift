@@ -3,8 +3,7 @@ import UIKit
 final class TranslationPopupViewController: UIViewController {
 
     /// Fired when the user taps "Add to dictionary" on a word result.
-    /// Actual persistence isn't wired up yet — this is the hook the next step will use.
-    var onSaveWord: ((_ word: String, _ translation: String, _ partOfSpeech: String?, _ contextSentence: String) -> Void)?
+    var onSaveWord: ((_ word: String, _ translation: String, _ partOfSpeech: String?, _ transcription: String?, _ contextSentence: String) -> Void)?
 
     private let spinner = UIActivityIndicatorView(style: .medium)
     private let titleLabel = UILabel()
@@ -14,7 +13,7 @@ final class TranslationPopupViewController: UIViewController {
     private let stack = UIStackView()
 
     // Kept around so the save button knows what to persist.
-    private var pendingWordSave: (word: String, translation: String, partOfSpeech: String?, context: String)?
+    private var pendingWordSave: (word: String, translation: String, partOfSpeech: String?, transcription: String?, context: String)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,7 +32,7 @@ final class TranslationPopupViewController: UIViewController {
         spinner.startAnimating()
     }
 
-    func showWordResult(word: String, translation: String, partOfSpeech: String?, contextSentence: String) {
+    func showWordResult(word: String, translation: String, partOfSpeech: String?, transcription: String?, contextSentence: String) {
         spinner.stopAnimating()
         errorLabel.isHidden = true
 
@@ -42,9 +41,12 @@ final class TranslationPopupViewController: UIViewController {
         if let partOfSpeech {
             subtitle += "  ·  \(partOfSpeech)"
         }
+        if let transcription {
+            subtitle += "\n\(transcription)"
+        }
         bodyLabel.text = subtitle
 
-        pendingWordSave = (word, translation, partOfSpeech, contextSentence)
+        pendingWordSave = (word, translation, partOfSpeech, transcription, contextSentence)
         saveButton.isHidden = false
     }
 
@@ -119,7 +121,7 @@ final class TranslationPopupViewController: UIViewController {
 
     @objc private func saveTapped() {
         guard let pending = pendingWordSave else { return }
-        onSaveWord?(pending.word, pending.translation, pending.partOfSpeech, pending.context)
+        onSaveWord?(pending.word, pending.translation, pending.partOfSpeech, pending.transcription, pending.context)
 
         saveButton.setTitle("Добавлено ✓", for: .normal)
         saveButton.isEnabled = false

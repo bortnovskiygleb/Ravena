@@ -10,6 +10,7 @@ interface ClaudeResponse {
 interface WordLookupResult {
   translation: string;
   partOfSpeech: string | null;
+  transcription: string | null;
 }
 
 const SYSTEM_PROMPT = `You translate a single English word into Russian, using the
@@ -17,8 +18,10 @@ given sentence to pick the correct sense (e.g. "bank" -> "берег" vs "бан
 Always provide a translation, even for names, numerals, abbreviations, or
 single letters — transliterate or describe briefly if there's no direct
 Russian equivalent, but the "translation" field must never be empty.
+Also provide the IPA phonetic transcription of the English word (e.g. "/ˈwɔːtər/").
 Respond with ONLY a JSON object, no markdown fences, no preamble:
-{"translation": "<russian word or short phrase>", "partOfSpeech": "<noun|verb|adjective|adverb|other>"}`;
+{"translation": "<russian word or short phrase>", "partOfSpeech": "<noun|verb|adjective|adverb|other>", "transcription": "<IPA, e.g. /ˈwɔːtər/>"}`;
+
 
 export async function lookupWordWithClaude(
   word: string,
@@ -101,8 +104,12 @@ async function attemptLookup(
   }
 
   const partOfSpeechValue = (parsed as { partOfSpeech?: unknown }).partOfSpeech;
+  const transcriptionValue = (parsed as { transcription?: unknown }).transcription;
   return {
     translation: (parsed as { translation: string }).translation,
     partOfSpeech: typeof partOfSpeechValue === "string" ? partOfSpeechValue : null,
+    transcription: typeof transcriptionValue === "string" && transcriptionValue.trim().length > 0
+      ? transcriptionValue.trim()
+      : null,
   };
 }

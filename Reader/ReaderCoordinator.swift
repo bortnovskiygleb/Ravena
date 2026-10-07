@@ -56,11 +56,12 @@ final class ReaderCoordinator: ReaderViewControllerDelegate {
         let popup = presentPopup()
         popup.showLoading()
 
-        popup.onSaveWord = { [dictionaryStore, libraryBook] word, translation, partOfSpeech, context in
+        popup.onSaveWord = { [dictionaryStore, libraryBook] word, translation, partOfSpeech, transcription, context in
             dictionaryStore.save(
                 word: word,
                 translation: translation,
                 partOfSpeech: partOfSpeech,
+                transcription: transcription,
                 contextSentence: context,
                 bookTitle: libraryBook.title
             )
@@ -74,6 +75,7 @@ final class ReaderCoordinator: ReaderViewControllerDelegate {
                         word: result.word,
                         translation: result.translation,
                         partOfSpeech: result.partOfSpeech,
+                        transcription: result.transcription,
                         contextSentence: contextSentence
                     )
                 }

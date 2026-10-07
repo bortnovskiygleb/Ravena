@@ -182,7 +182,15 @@ struct DictionaryListView: View {
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
-                
+
+                if let transcription = entry.transcription {
+                    Text(transcription)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                }
+
                 Text(entry.translation)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

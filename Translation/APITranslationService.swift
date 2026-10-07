@@ -19,7 +19,8 @@ final class APITranslationService: TranslationService {
         return WordTranslation(
             word: word,
             translation: response.translation,
-            partOfSpeech: response.partOfSpeech
+            partOfSpeech: response.partOfSpeech,
+            transcription: response.transcription
         )
     }
 
@@ -75,6 +76,7 @@ private struct WordTranslationRequest: Encodable {
 private struct WordTranslationResponse: Decodable {
     let translation: String
     let partOfSpeech: String?
+    let transcription: String?
 }
 
 private struct SentenceTranslationRequest: Encodable {

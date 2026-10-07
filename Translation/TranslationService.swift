@@ -7,6 +7,8 @@ struct WordTranslation {
     let translation: String
     /// e.g. "noun", "verb" — helps disambiguate homonyms when saving to the dictionary.
     let partOfSpeech: String?
+    /// IPA phonetic transcription, e.g. "/ˈwɔːtər/". Nil when not available (DeepL fallback).
+    let transcription: String?
 }
 
 struct SentenceTranslation {
