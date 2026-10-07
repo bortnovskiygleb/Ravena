@@ -94,11 +94,30 @@ export default {
           return jsonResponse({ error: "Input too long" }, 400);
         }
 
-        const result = await lookupWordWithClaude(word, contextSentence, env.ANTHROPIC_API_KEY);
-        return jsonResponse({
-          translation: result.translation,
-          partOfSpeech: result.partOfSpeech,
-        });
+        try {
+          const result = await lookupWordWithClaude(word, contextSentence, env.ANTHROPIC_API_KEY);
+          return jsonResponse({
+            translation: result.translation,
+            partOfSpeech: result.partOfSpeech,
+          });
+        } catch (claudeError) {
+          console.warn("Claude word lookup failed, falling back to DeepL:", claudeError);
+
+          try {
+            const deeplTranslation = await translateSentenceWithDeepL(
+              word,
+              "ru",
+              env.DEEPL_API_KEY
+            );
+            return jsonResponse({
+              translation: deeplTranslation,
+              partOfSpeech: null,
+            });
+          } catch (deeplError) {
+            console.error("DeepL fallback also failed:", deeplError);
+            throw deeplError;
+          }
+        }
       }
 
       return jsonResponse({ error: "Not found" }, 404);
