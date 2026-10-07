@@ -8,14 +8,11 @@ struct DictionaryListView: View {
     @State private var isShowingReview = false
     @State private var selectedWord: SavedWord?
 
+    @State private var isAscending = false
+
     init() {
         _words = Query(sort: \SavedWord.dateAdded, order: .reverse)
 
-        // #Predicate can't build an expression tree directly from `Date.now`
-        // (a computed static property) — capturing it as a plain local
-        // constant first, and referencing *that* inside the predicate, is
-        // the standard workaround: a captured value compiles fine, a direct
-        // Date.now reference inside the closure does not.
         let now = Date.now
         _dueWords = Query(
             filter: #Predicate<SavedWord> { $0.nextReviewDate <= now },
@@ -87,6 +84,18 @@ struct DictionaryListView: View {
         .blur(radius: isShowingReview ? 5 : 0)
         .animation(.easeInOut(duration: 0.3), value: isShowingReview)
         .navigationTitle("Мой словарь")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation {
+                        isAscending.toggle()
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .disabled(words.isEmpty)
+            }
+        }
         .sheet(isPresented: $isShowingReview) {
             ReviewSessionView()
         }
@@ -124,11 +133,22 @@ struct DictionaryListView: View {
     private var groupedWords: [(date: Date, words: [SavedWord])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: words) { word in
-            // Сдвигаем время на 4 часа назад: 03:59 будет считаться предыдущим днем
             let shifted = calendar.date(byAdding: .hour, value: -4, to: word.dateAdded) ?? word.dateAdded
             return calendar.startOfDay(for: shifted)
         }
-        return grouped.map { (date: $0.key, words: $0.value) }.sorted { $0.date > $1.date }
+        
+        let mapped = grouped.map { (date: $0.key, words: $0.value) }
+        
+        // Ensure inner arrays are sorted consistently
+        let sortedMapped = mapped.map { item in
+            (date: item.date, words: isAscending 
+                ? item.words.sorted(by: { $0.dateAdded < $1.dateAdded }) 
+                : item.words.sorted(by: { $0.dateAdded > $1.dateAdded }))
+        }
+        
+        return isAscending 
+            ? sortedMapped.sorted { $0.date < $1.date }
+            : sortedMapped.sorted { $0.date > $1.date }
     }
 
     private func sectionTitle(for logicalDate: Date) -> String {
