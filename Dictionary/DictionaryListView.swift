@@ -156,21 +156,23 @@ struct DictionaryListView: View {
         Button {
             selectedWord = entry
         } label: {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .center, spacing: 8) {
                 Text(entry.word)
                     .font(.headline)
                     .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(2)
                 
                 Text(entry.translation)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(3)
                     
                 Spacer(minLength: 0)
             }
             .padding()
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .top)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
