@@ -18,7 +18,7 @@ Detailed descriptions of various aspects of the project are available in separat
 - **Smart Translation**: Tap a word for contextual translation, long-press to translate an entire sentence.
 - **Personal Dictionary**: Save translated words with their context and learn them using Spaced Repetition.
 - **Local Library**: Books are copied into the app's local storage; original files are no longer needed.
-- **Flexible Settings**: Adjust font size, margins, line spacing, and theme (light, sepia, night, dark) on the fly.
+- **Flexible Settings**: Adjust font size (14–48pt), choose from 12 typefaces, set margins, line spacing, brightness (for Sepia/Night themes), and app theme on the fly.
 
 ## Requirements
 

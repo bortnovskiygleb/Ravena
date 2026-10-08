@@ -57,9 +57,11 @@ Opens on top of the Library when a book is selected. The primary mode is page-by
 - A single physical chapter file may contain multiple TOC entries — navigation jumps to the specific section inside the file, not just the beginning
 - Sections without a title in the original TOC (covers, publisher utility pages) are hidden from the list, but are still accessible via normal page turning
 
-**Chapter Navigation** — arrows in the navigation bar switch to the previous/next chapter entirely.
+**Chapter Navigation** — arrows in the navigation bar switch to the previous/next chapter entirely. Swiping to the next page automatically crosses chapter boundaries — the last page of one chapter is seamlessly followed by the first page of the next.
 
-**Progress** — a thin bar at the top + a "N pages left" label showing remaining pages in the current chapter (not the whole book).
+**Progress** — a label at the bottom showing «Осталось N стр.» (pages remaining in the current chapter) or «Последняя страница» on the last page. Tracks chapter progress only, not the whole book.
+
+**Full-Screen Mode** — tapping empty space (whitespace, margin, or punctuation that isn't a word or footnote marker) toggles an immersive reading view: the navigation bar, tab bar, and system status bar all hide simultaneously with a smooth animation, leaving only the text. Tapping again restores everything. The text layout does not shift during the transition.
 
 **On-the-fly Appearance** — changes in Settings (font, background, margins, spacing) are applied immediately without leaving the reading screen; the reader attempts to keep the exact reading position during pagination recalculation.
 
@@ -86,16 +88,21 @@ A list of all saved words.
 
 All settings apply immediately and globally across all books.
 
-| Setting | Range |
+| Setting | Options / Range |
 |---|---|
-| Font Size | 14–32pt |
-| Font Style | System / Serif / Monospaced |
+| Font Size | 14–48pt |
+| Font Style | Системный, New York, Georgia, Palatino, Iowan Old Style, Charter, Baskerville, Gill Sans, Avenir, Системный Serif, Системный Моно, Courier New |
 | Reading Background | White / Sepia / Night / Black |
+| Background Brightness | –100% … +100% (only for Sepia and Night themes) |
 | App Theme | System / Light / Dark |
-| Margins | 8–40pt |
+| Margins | 8–40pt (horizontal only; top/bottom are fixed) |
 | Line Spacing | 0–10pt |
 
-At the bottom of the screen is a live preview: a text snippet styled exactly how the book page will look with current settings.
+**Font picker** uses a wheel selector displaying each typeface in its own typeface, so you can see exactly what you're choosing. The size slider has an inline `A` / `A` preview that updates as you drag.
+
+**Background Brightness** — a slider that appears only when Sepia or Night is selected; moves the background shade darker or lighter within a range that keeps it legible against the fixed text color.
+
+At the bottom of the screen is a live preview: a text snippet styled exactly how the book page will look with the current settings (font, size, background, brightness, margins, spacing).
 
 ---
 
